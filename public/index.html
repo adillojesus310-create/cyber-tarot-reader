@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>赛博塔罗师</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <main class="shell">
+      <section class="oracle">
+        <div class="brand">
+          <span class="sigil" aria-hidden="true">✦</span>
+          <div>
+            <p class="eyebrow">Obsidian Oracle</p>
+            <h1>赛博塔罗师</h1>
+            <p id="vaultStatus">正在连接 Obsidian 知识库...</p>
+          </div>
+        </div>
+
+        <div class="altar" aria-hidden="true">
+          <div class="moon"></div>
+          <div class="ring ring-one"></div>
+          <div class="ring ring-two"></div>
+          <div class="rune rune-a">I</div>
+          <div class="rune rune-b">XII</div>
+          <div class="rune rune-c">XXI</div>
+        </div>
+
+        <div class="console-panel">
+          <label for="question">你的问题</label>
+          <textarea id="question" rows="4" placeholder="把问题改写成状态、趋势、建议类。例如：接下来三个月，我和这段关系的互动趋势如何？"></textarea>
+
+          <label for="background">背景补充</label>
+          <textarea id="background" rows="5" placeholder="越具体越准：你们现在是什么关系？最近发生了什么？你最卡的是对方态度、现实距离、复合、表白、推进节奏，还是你自己的选择？"></textarea>
+
+          <div class="controls">
+            <label>
+              <span>牌阵</span>
+              <select id="spread"></select>
+            </label>
+            <label>
+              <span>牌库</span>
+              <select id="deckMode">
+                <option value="78" selected>78 张全牌</option>
+                <option value="22">22 张大牌</option>
+              </select>
+            </label>
+            <label class="toggle">
+              <input id="allowReversed" type="checkbox" checked>
+              <span>允许逆位</span>
+            </label>
+          </div>
+
+          <section id="spreadGuide" class="spread-guide" aria-live="polite"></section>
+
+          <div class="actions">
+            <button id="drawBtn" type="button">开启牌阵</button>
+            <button id="clearBtn" type="button" class="ghost">清场</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="reading">
+        <div class="reading-head">
+          <div>
+            <p class="eyebrow">Reading Chamber</p>
+            <h2 id="readingTitle">等待抽牌</h2>
+          </div>
+          <a id="sourceLink" href="#" class="source" hidden>打开牌阵笔记</a>
+        </div>
+
+        <div id="cards" class="cards empty">
+          <p>输入问题后开启牌阵。牌义会从你的 Obsidian Markdown 中读取。</p>
+        </div>
+
+        <article id="synthesis" class="synthesis" hidden></article>
+      </section>
+    </main>
+
+    <template id="cardTemplate">
+      <article class="tarot-card">
+        <div class="card-face">
+          <span class="number"></span>
+          <span class="glyph"></span>
+          <span class="element"></span>
+        </div>
+        <div class="card-body">
+          <div class="card-title-row">
+            <h3></h3>
+            <span class="orientation"></span>
+          </div>
+          <p class="position"></p>
+          <p class="keyword"></p>
+          <p class="meaning"></p>
+          <a class="note-link" target="_blank" rel="noreferrer">Obsidian 来源</a>
+        </div>
+      </article>
+    </template>
+
+    <script src="/app.js"></script>
+  </body>
+</html>
