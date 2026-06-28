@@ -173,15 +173,14 @@ function initSpreadSelect() {
 
 async function loadKnowledge() {
   if (location.protocol === "file:") {
-    throw new Error("请用 http://localhost:5177 打开网页，file 模式无法连接 Obsidian。");
+    throw new Error("请用服务地址打开网页，file 模式无法载入牌库。");
   }
   const response = await fetch("/api/knowledge", { cache: "no-store" });
   if (!response.ok) throw new Error("无法读取知识库");
   state.knowledge = await response.json();
-  const aiStatus = state.knowledge.aiEnabled ? `AI已启用：${state.knowledge.aiModel}` : "AI未启用";
-  vaultStatusEl.textContent = `已连接：${state.knowledge.tarotDir} · ${state.knowledge.cards.length} 张牌 · ${aiStatus}`;
-  sourceLinkEl.href = state.knowledge.guidance.source.obsidian;
-  sourceLinkEl.hidden = false;
+  const aiStatus = state.knowledge.aiEnabled ? "AI解读已启用" : "AI解读未启用";
+  vaultStatusEl.textContent = `牌库已载入 · ${state.knowledge.cards.length} 张牌 · ${aiStatus}`;
+  sourceLinkEl.hidden = true;
 }
 
 function renderSpreadGuide() {
@@ -235,8 +234,7 @@ function renderCards(cards) {
     node.querySelector(".keyword").textContent = card.keyword;
     node.querySelector(".meaning").textContent = reversedHint(card);
     const link = node.querySelector(".note-link");
-    link.href = card.source.obsidian;
-    link.textContent = `打开 ${card.source.file}`;
+    link.hidden = true;
     cardsEl.appendChild(node);
   }
 }
@@ -639,16 +637,12 @@ function showAiSetupMessage(error) {
     <h3>AI 解读未启用</h3>
     <section class="deep-block">
       <h4>为什么现在还是不够像真人解读</h4>
-      <p>${escapeHtml(error || "本地后端没有检测到 DEEPSEEK_API_KEY 或 OPENAI_API_KEY。")}</p>
-      <p>目前网页已经停止使用伪深度模板。要得到真正结合问题和背景的解读，需要在后端启用模型推理。</p>
+      <p>${escapeHtml(error || "当前服务还没有启用 AI 解读。")}</p>
+      <p>目前网页已经停止使用伪深度模板。要得到真正结合问题和背景的解读，需要在后台启用 AI 服务。</p>
     </section>
     <section class="deep-block">
       <h4>启用方式</h4>
-      <p>在启动服务前设置环境变量：</p>
-      <p><code>$env:DEEPSEEK_API_KEY="你的 DeepSeek API Key"</code></p>
-      <p>可选：<code>$env:DEEPSEEK_MODEL="deepseek-v4-pro"</code></p>
-      <p>也可以使用 OpenAI：<code>$env:OPENAI_API_KEY="你的 OpenAI API Key"</code></p>
-      <p>然后重新运行 <code>npm start</code>，刷新页面再抽牌。</p>
+      <p>请在服务后台配置可用的 AI 解读能力，然后刷新页面再抽牌。</p>
     </section>
   `;
 }
@@ -658,8 +652,8 @@ async function synthesize(question, background, cards, spread) {
   synthesisEl.innerHTML = `
     <h3>AI 正在解读</h3>
     <section class="deep-block">
-      <h4>正在结合问题、背景、牌阵和 Obsidian 牌义</h4>
-      <p>这一步会交给后端模型推理，不再使用前端模板拼接。</p>
+      <h4>正在结合问题、背景、牌阵和牌义</h4>
+      <p>这一步会交给后台 AI 服务处理，不再使用前端模板拼接。</p>
     </section>
   `;
 
@@ -683,10 +677,6 @@ async function synthesize(question, background, cards, spread) {
     synthesisEl.innerHTML = `
       <h3>AI 深度解读</h3>
       ${markdownToHtml(data.reading)}
-      <section class="deep-block meta-block">
-        <h4>模型</h4>
-        <p>${escapeHtml(data.model || "未知")}</p>
-      </section>
     `;
   } catch (error) {
     showAiSetupMessage(error.message);
@@ -717,7 +707,7 @@ function clearReading() {
   synthesisEl.hidden = true;
   synthesisEl.innerHTML = "";
   cardsEl.className = "cards empty";
-  cardsEl.innerHTML = "<p>输入问题后开启牌阵。牌义会从你的 Obsidian Markdown 中读取。</p>";
+  cardsEl.innerHTML = "<p>输入问题后开启牌阵。系统会结合牌义、问题和背景生成解读。</p>";
 }
 
 spreadSelectEl.addEventListener("change", renderSpreadGuide);
@@ -728,5 +718,5 @@ initSpreadSelect();
 loadKnowledge().catch((error) => {
   vaultStatusEl.textContent = error.message;
   cardsEl.className = "cards empty";
-  cardsEl.innerHTML = `<p>${escapeHtml(error.message)}<br>先在项目目录运行 npm start，再打开 http://localhost:5177。</p>`;
+  cardsEl.innerHTML = `<p>${escapeHtml(error.message)}<br>请稍后刷新页面重试。</p>`;
 });
