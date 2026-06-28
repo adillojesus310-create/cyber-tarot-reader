@@ -238,6 +238,19 @@ function buildKnowledge() {
   return buildDeck();
 }
 
+function sanitizeKnowledgeForClient(knowledge) {
+  return {
+    generatedAt: knowledge.generatedAt,
+    sourceMode: knowledge.sourceMode,
+    aiEnabled: knowledge.aiEnabled,
+    cards: (knowledge.cards || []).map(({ source, ...card }) => card),
+    guidance: {
+      spreads: knowledge.guidance?.spreads || "",
+      ethics: knowledge.guidance?.ethics || ""
+    }
+  };
+}
+
 function sendJson(res, data) {
   res.writeHead(200, { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" });
   res.end(JSON.stringify(data));
@@ -280,7 +293,7 @@ function markdownListCards(cards) {
       `${index + 1}. ${card.position}：${card.name}${orientation}`,
       `   - 类型：${card.arcana} / ${card.family} / ${card.element}元素`,
       `   - 关键词：${safeText(card.keyword, 180)}`,
-      `   - Obsidian牌义：${safeText(card.meaning, 1200)}`
+      `   - 牌义依据：${safeText(card.meaning, 1200)}`
     ].join("\n");
   }).join("\n");
 }
@@ -294,7 +307,7 @@ function buildReadingPrompt(payload) {
   const cards = Array.isArray(payload.cards) ? payload.cards.slice(0, 12) : [];
   const guidance = safeText(payload.guidance, 1200);
 
-  return `你是一位严谨、直白、有经验的中文塔罗师。你会使用用户的 Obsidian 塔罗笔记作为牌义依据，但你的任务不是复述牌义，而是把牌义映射到用户的问题和背景里，给出具体判断。
+  return `你是一位严谨、直白、有经验的中文塔罗师。你会使用系统提供的塔罗牌义作为依据，但你的任务不是复述牌义，而是把牌义映射到用户的问题和背景里，给出具体判断。
 
 必须遵守：
 1. 不要写“能量、课题、模式、显影、校准”这类空泛话，除非马上翻译成现实行为。
@@ -337,7 +350,7 @@ ${spreadName || "未知牌阵"}
 抽到的牌：
 ${markdownListCards(cards)}
 
-Obsidian占卜原则补充：
+占卜原则补充：
 ${guidance || "无"}
 `;
 }
@@ -369,7 +382,7 @@ function extractChatCompletionText(data) {
 
 async function createAiReading(payload) {
   if (!AI_PROVIDER) {
-    const error = new Error("AI解读未启用：请先配置 DEEPSEEK_API_KEY 或 OPENAI_API_KEY。");
+    const error = new Error("AI解读未启用：请先在后台配置可用的模型服务。");
     error.statusCode = 501;
     throw error;
   }
@@ -401,7 +414,7 @@ async function createAiReading(payload) {
 
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
-      const message = data.error?.message || `DeepSeek API 请求失败：${response.status}`;
+      const message = data.error?.message || `AI服务请求失败：${response.status}`;
       const error = new Error(message);
       error.statusCode = response.status;
       throw error;
@@ -409,12 +422,12 @@ async function createAiReading(payload) {
 
     const reading = extractChatCompletionText(data);
     if (!reading) {
-      const error = new Error("DeepSeek没有返回可用解读。");
+      const error = new Error("AI服务没有返回可用解读。");
       error.statusCode = 502;
       throw error;
     }
 
-    return { reading, model: AI_MODEL, provider: "DeepSeek" };
+    return { reading };
   }
 
   const response = await fetch("https://api.openai.com/v1/responses", {
@@ -441,7 +454,7 @@ async function createAiReading(payload) {
 
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    const message = data.error?.message || `OpenAI API 请求失败：${response.status}`;
+    const message = data.error?.message || `AI服务请求失败：${response.status}`;
     const error = new Error(message);
     error.statusCode = response.status;
     throw error;
@@ -454,7 +467,7 @@ async function createAiReading(payload) {
     throw error;
   }
 
-  return { reading, model: AI_MODEL, provider: "OpenAI" };
+  return { reading };
 }
 
 function sendFile(res, file) {
@@ -477,7 +490,7 @@ function sendFile(res, file) {
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://localhost:${PORT}`);
   if (url.pathname === "/api/knowledge") {
-    sendJson(res, buildKnowledge());
+    sendJson(res, sanitizeKnowledgeForClient(buildKnowledge()));
     return;
   }
   if (url.pathname === "/api/reading" && req.method === "POST") {
@@ -503,7 +516,7 @@ const server = http.createServer(async (req, res) => {
 if (!process.env.EXPORT_TAROT_KNOWLEDGE) {
   server.listen(PORT, () => {
     console.log(`赛博塔罗师已启动：http://localhost:${PORT}`);
-    console.log(`Obsidian 塔罗库：${TAROT_DIR}`);
+    console.log(`塔罗牌库：${TAROT_DIR}`);
   });
 }
 
