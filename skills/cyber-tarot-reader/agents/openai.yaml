@@ -1,0 +1,3 @@
+display_name: Cyber Tarot Reader
+short_description: Tarot reading workflow grounded in user background and card meanings.
+default_prompt: Help me do a tarot reading using my question, background, spread, and card meanings.
